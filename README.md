@@ -1,4 +1,4 @@
 # sd-image-to-prompts
-competition: https://www.kaggle.com/competitions/stable-diffusion-image-to-prompts
-workspace: https://trello.com/w/sdimagetoprompts
-baseline whitepaper: https://www.kaggle.com/competitions/stable-diffusion-image-to-prompts/discussion/386819
+Competition: https://www.kaggle.com/competitions/stable-diffusion-image-to-prompts </br>
+Workspace: https://trello.com/w/sdimagetoprompts </br>
+Baseline whitepaper: https://www.kaggle.com/competitions/stable-diffusion-image-to-prompts/discussion/386819

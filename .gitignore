@@ -131,7 +131,10 @@ dmypy.json
 # vscode
 .vscode/
 
-/taming*
+vqgan_approach/taming*
+vqgan_approach/lpips*
+vqgan_approach/vqgan_imagenet_f16_16384*
+
 
 /logs
 

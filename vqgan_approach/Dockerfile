@@ -52,11 +52,9 @@ RUN wget -nv https://repo.anaconda.com/archive/Anaconda3-2020.07-Linux-x86_64.sh
     echo ". /opt/conda/etc/profile.d/conda.sh" >> ~/.bashrc
 ENV PATH /opt/conda/bin:$PATH
 
+ARG CACHE_BUSTER
 COPY conda_env.yml /
 RUN conda env create -n main -f conda_env.yml && echo "conda activate main" >> ~/.bashrc
-
-RUN conda install pytorch==1.13.1 torchvision==0.14.1 torchaudio==0.13.1 -c pytorch -c nvidia
-RUN pip install omegaconf>=2.0.0 pytorch-lightning>=1.0.8 einops transformers pandas
 
 COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh

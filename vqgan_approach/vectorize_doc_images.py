@@ -1,4 +1,3 @@
-
 from tqdm import tqdm
 
 import os
@@ -13,12 +12,8 @@ import torchvision.transforms.functional as TF
 from torchvision.transforms import ToTensor
 from torch.utils.data import Dataset, DataLoader
 
-import io
-import os, sys
-import requests
+import sys
 import PIL
-from PIL import Image
-from PIL import ImageDraw, ImageFont
 import numpy as np
 
 import torch
@@ -29,7 +24,6 @@ import torchvision.transforms.functional as TF
 
 import yaml
 
-import sys
 sys.path.append('./taming-transformers')
 
 from omegaconf import OmegaConf
@@ -80,6 +74,7 @@ def save_npy(embeddings, npy_path):
 
 
 def get_image_from_memmap(memmap_path, image_number):
+    # be careful with the dtype here: i2 is 16 bit signed, uint16 is 16 bit unsigned
     mmap_embeddings = np.memmap(memmap_path, dtype='i2', mode='r+', shape=(14_000_000, 1024))
     return mmap_embeddings[image_number]
 
@@ -132,8 +127,17 @@ def main(args):
     config = load_config(args.model_config_path, display=False)
     model = load_vqgan(config, ckpt_path=args.model_ckpt_path).to(device)
 
+    # we need to create memmap first if it doesn't exist:
+    # be careful with the dtype here: i2 is 16 bit signed, uint16 is 16 bit unsigned
+    # which one do you really need?
+    if not os.path.exists(args.memmap_path):
+        memmap = np.memmap(args.memmap_path, dtype='i2', mode='w+', shape=(14_000_000, 1024))
+    else:
+        memmap = np.memmap(args.memmap_path, dtype='i2', mode='r+', shape=(14_000_000, 1024))
+
+
     # Process the images in batches and save the embeddings
-    for image_batch in tqdm(dataloader, total=len(dataloader), desc='Vectorizing images'):
+    for i, image_batch in tqdm(enumerate(dataloader), total=len(dataloader), desc='Vectorizing'):
         images, image_numbers = image_batch
         images = images.to(device)
         z, _, [_, _, indices] = model.encode(images)
@@ -144,9 +148,12 @@ def main(args):
         assert indices.shape[0] == len(image_numbers)
 
         indices = indices.cpu().numpy()
+        memmap[start_idx:start_idx + len(indices)] = indices
 
-        mmap_embeddings = np.memmap(args.memmap_path, dtype='i2', mode='r+', shape=(14_000_000, 1024))
-        mmap_embeddings[start_idx:start_idx + len(indices)] = indices
+        if i % args.flush_every == 0 and i > 0:
+            memmap.flush()
+
+    memmap.flush()
 
 
 if __name__ == "__main__":
@@ -159,7 +166,9 @@ if __name__ == "__main__":
     parser.add_argument("--n_workers", type=int, default=8, help="Number of workers")
     parser.add_argument("--model_config_path", type=str, help="Path to the model config file")  # "logs/vqgan_imagenet_f16_16384/configs/model.yaml"
     parser.add_argument("--model_ckpt_path", type=str, help="Path to the model checkpoint file")  # "logs/vqgan_imagenet_f16_16384/checkpoints/last.ckpt"
+    parser.add_argument("--flush_every", type=int, default=100, help="Flush the memmap file every N batches")
     parser.add_argument("--start_part_number")
     parser.add_argument("--end_part_number")
     args = parser.parse_args()
     main(args)
+    print('done!')

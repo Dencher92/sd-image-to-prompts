@@ -159,7 +159,7 @@ def run_training(
             best_epoch_loss = val_epoch_loss
             best_model_wts = copy.deepcopy(model.state_dict())
 
-            model_path = os.path.join(checkpoints_dir_path, f"model_{epoch}_{val_epoch_loss:.4f}")
+            model_path = os.path.join(checkpoints_dir_path, f"model_{epoch}")
             mlflow.pytorch.save_model(model, model_path)
 
             saved_models = sorted(os.listdir(checkpoints_dir_path), key=lambda x: int(x.split("_")[-1]))

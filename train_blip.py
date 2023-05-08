@@ -3,6 +3,7 @@
 import os
 import gc
 import copy
+import tempfile
 import torch
 import hydra
 import numpy as np
@@ -45,10 +46,7 @@ class CustomDataset(Dataset):
         image_path = self.image_list[index]
         image = Image.open(image_path).convert("RGB")
         prompt = self.prompt_list[index]
-        try:
-            item = self.processor(images=image, text=prompt, padding="max_length", return_tensors="pt")
-        except:
-            print(f"Error in processing image: {image_path}, prompt: {prompt}")
+        item = self.processor(images=image, text=prompt, padding="max_length", return_tensors="pt")
         return {k:v.squeeze() for k,v in item.items()}
 
 
@@ -112,6 +110,9 @@ import torch
 import os
 import copy
 
+import os
+import shutil
+
 def run_training(
     model,
     optimizer,
@@ -122,7 +123,9 @@ def run_training(
     valid_loader,
     device,
     n_accumulate=1,
-    patience=3
+    patience=3,
+    checkpoints_dir_path="checkpoints",
+    max_saved_models=5
 ):
     best_model_wts = copy.deepcopy(model.state_dict())
     best_epoch_loss = np.inf
@@ -155,7 +158,14 @@ def run_training(
             print(f"Validation Loss Improved ({best_epoch_loss} ---> {val_epoch_loss})")
             best_epoch_loss = val_epoch_loss
             best_model_wts = copy.deepcopy(model.state_dict())
-            mlflow.pytorch.log_model(model, "model")
+
+            model_path = os.path.join(checkpoints_dir_path, f"model_{epoch}_{val_epoch_loss:.4f}")
+            mlflow.pytorch.save_model(model, model_path)
+
+            saved_models = sorted(os.listdir(checkpoints_dir_path), key=lambda x: int(x.split("_")[-1]))
+            while len(saved_models) > max_saved_models:
+                model_to_remove = saved_models.pop(0)
+                shutil.rmtree(os.path.join(checkpoints_dir_path, model_to_remove))
 
             patience_counter = 0
         else:
@@ -192,6 +202,9 @@ def main(args : DictConfig):
         with open_dict(args):
             args.run_id = mlflow_run_id
         log_params_to_mlflow(OmegaConf.to_container(args))
+        checkpoints_dir_path = mlflow_run.info.artifact_uri
+    else:
+        checkpoints_dir_path = os.path.join(args.checkpoints_dir, 'tmp')
 
     # Set seed
     set_seed(args.seed)
@@ -236,7 +249,7 @@ def main(args : DictConfig):
     )
 
     # Load model
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    device = args.device
     print('Device:', device)
 
     model = BlipForConditionalGeneration.from_pretrained(args.model_name)
@@ -256,7 +269,8 @@ def main(args : DictConfig):
         valid_loader=valid_loader,
         device=device,
         n_accumulate=args.n_accumulate,
-        patience=args.patience
+        patience=args.patience,
+        checkpoints_dir_path=checkpoints_dir_path
     )
 
     # Release memory

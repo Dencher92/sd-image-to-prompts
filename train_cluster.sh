@@ -11,4 +11,5 @@ CONFIG_DIR=$CONFIG_DIR \
 CONFIG_NAME=$CONFIG_NAME \
 $PYTHON_EXECUTABLE $SCRIPT_NAME \
 ++mnt_dir_path=$MNT_DIR_PATH \
+++is_cluster=True \
 "$@"

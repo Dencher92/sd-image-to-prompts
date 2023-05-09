@@ -160,6 +160,7 @@ def run_training(
             best_model_wts = copy.deepcopy(model.state_dict())
 
             model_path = os.path.join(checkpoints_dir_path, f"model_{epoch}")
+            print(f"Saving model to {model_path}")
             mlflow.pytorch.save_model(model, model_path)
 
             saved_models = sorted(os.listdir(checkpoints_dir_path), key=lambda x: int(x.split("_")[-1]))
@@ -203,6 +204,10 @@ def main(args : DictConfig):
             args.run_id = mlflow_run_id
         log_params_to_mlflow(OmegaConf.to_container(args))
         checkpoints_dir_path = mlflow_run.info.artifact_uri
+
+        if args.is_cluster:
+            # костыль, потому что тренька на кластере, а на млфлоу на локалке и до маунта разные пути блять...
+            checkpoints_dir_path = checkpoints_dir_path.replace('/mnt/home', '/mnt/home/divashkov')
     else:
         checkpoints_dir_path = os.path.join(args.checkpoints_dir, 'tmp')
 

@@ -129,6 +129,7 @@ def run_training(
 ):
     best_model_wts = copy.deepcopy(model.state_dict())
     best_epoch_loss = np.inf
+    prev_epoch_loss = np.inf
     patience_counter = 0
 
     for epoch in range(1, num_epochs + 1):
@@ -168,9 +169,12 @@ def run_training(
                 model_to_remove = saved_models.pop(0)
                 shutil.rmtree(os.path.join(checkpoints_dir_path, model_to_remove))
 
-            patience_counter = 0
-        else:
+            mlflow.log_metric("val_loss_max", best_epoch_loss, step=epoch)
+
+        if val_epoch_loss > prev_epoch_loss:
             patience_counter += 1
+        else:
+            patience_counter = 0
 
         if patience_counter >= patience:
             print(f"Early stopping after {patience} epochs without improvement.")
@@ -259,6 +263,8 @@ def main(args : DictConfig):
 
     model = BlipForConditionalGeneration.from_pretrained(args.model_name)
     model.to(device)
+    # print number of parameters:
+    print(f"Number of parameters: {sum(p.numel() for p in model.parameters())}")
 
     optimizer = AdamW(model.parameters(), lr=args.learning_rate, weight_decay=args.weight_decay)
     scheduler = lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.t_max, eta_min=args.min_lr)

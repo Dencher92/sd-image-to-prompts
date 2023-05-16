@@ -1,0 +1,19 @@
+seed: 424242
+
+model_name: /mnt/home/weights/sentence-transformers-222/all-MiniLM-L6-v2
+embedding_size: 384
+
+mnt_dir_path: /mnt/home
+index_path: ${mnt_dir_path}/data/laion/laion2b-en-vit-h-14-embeddings/metadata/metadata_0070.parquet
+out_path: ${mnt_dir_path}/data/laion_custom_embs/laion2b-en-sentence-transformer-embeddings
+
+batch_size: 512
+n_workers: 8
+prefetch_factor: 8
+device: cuda
+
+is_cluster: False
+
+tracking_uri: ${mnt_dir_path}/mlruns
+experiment_name: "sentence-transformer-inference"
+use_mlflow: False

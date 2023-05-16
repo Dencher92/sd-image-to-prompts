@@ -1,0 +1,30 @@
+seed: 424242
+
+device: cuda
+
+tracking_uri: ${mnt_dir_path}/mlruns
+
+output_dim: 256
+input_dim: 1024  # adjust this to your actual input dimension
+
+batch_size: 256
+epoch_length: 100
+learning_rate: 0.001
+epochs: 100
+
+train_ratio: 0.9
+dtype: "float16"
+shape: [122289192, 1024]  # adjust these values to your actual data shape
+big: false
+
+experiment_name: "laion-autoencoder"
+max_saved_models: 5
+patience: 10
+
+is_cluster: False
+
+use_mlflow: True
+checkpoints_dir: null
+
+memmap_file: "path/to/your/memmap/file"
+checkpoint_path: "path/to/checkpoint/file"  # adjust this to your actual checkpoint path
